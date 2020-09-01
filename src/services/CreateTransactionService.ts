@@ -3,6 +3,7 @@ import { getCustomRepository, getRepository } from 'typeorm';
 import TransactionsRepository from '../repositories/TransactionsRepository';
 import Transaction from '../models/Transaction';
 import Category from '../models/Category';
+import AppError from '../errors/AppError';
 
 interface RequestDTO {
   title: string;
@@ -20,6 +21,14 @@ class CreateTransactionService {
   }: RequestDTO): Promise<Transaction> {
     const transactionRepository = getCustomRepository(TransactionsRepository);
     const categoryRepository = getRepository(Category);
+
+    const { total } = await transactionRepository.getBalance();
+
+    if (type === 'outcome' && total < value) {
+      throw new AppError(
+        "Invalid transaction! You don't have enough balance to proceed.",
+      );
+    }
 
     let transactionCategory = await categoryRepository.findOne({
       where: { title: category },
